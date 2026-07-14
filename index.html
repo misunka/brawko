@@ -2,7 +2,7 @@
 <html lang="cs">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Brawl Fitness ⚡</title>
     <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@700;800;900&display=swap" rel="stylesheet">
     <style>
@@ -16,7 +16,16 @@
             color: white;
             user-select: none; -webkit-user-select: none;
         }
-        .screen { display: none; min-height: 100vh; padding: 18px; flex-direction: column; }
+        .screen {
+            display: none;
+            min-height: 100dvh;
+            padding:
+                calc(18px + env(safe-area-inset-top))
+                calc(18px + env(safe-area-inset-right))
+                calc(18px + env(safe-area-inset-bottom))
+                calc(18px + env(safe-area-inset-left));
+            flex-direction: column;
+        }
         .screen.active { display: flex; }
         .title { text-align: center; font-size: 2.2em; font-weight: 900; color: #FFD700; text-shadow: 3px 3px 0 #000, -1px -1px 0 #000; letter-spacing: 2px; }
         .subtitle { text-align: center; font-size: 0.95em; color: #aaa; margin-top: 4px; }
