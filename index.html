@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Brawl Fitness ⚡</title>
+    <link href="https://fonts.googleapis.com/css2?family=Lilita+One&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background: linear-gradient(160deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            min-height: 100vh;
+            font-family: 'Lilita One', 'Arial Black', Arial, sans-serif;
+            color: white;
+            user-select: none; -webkit-user-select: none;
+        }
+        .screen { display: none; min-height: 100vh; padding: 18px; flex-direction: column; }
+        .screen.active { display: flex; }
+        .title { text-align: center; font-size: 1.9em; color: #FFD700; text-shadow: 3px 3px 0 #000, -1px -1px 0 #000; letter-spacing: 2px; }
+        .subtitle { text-align: center; font-size: 0.78em; color: #aaa; font-family: Arial, sans-serif; font-weight: normal; margin-top: 4px; }
+
+        /* STATS */
+        .stats-bar { display: flex; justify-content: center; gap: 8px; margin: 14px 0 4px; }
+        .stat-item { background: rgba(255,255,255,0.08); border: 2px solid rgba(255,215,0,0.25); border-radius: 16px; padding: 7px 12px; display: flex; align-items: center; gap: 5px; }
+        .stat-icon { font-size: 1.2em; }
+        .stat-value { font-size: 1.05em; color: #FFD700; }
+        .stat-label { font-size: 0.58em; color: #aaa; display: block; font-family: Arial; font-weight: normal; }
+
+        /* BUTTONS */
+        .btn { display: block; width: 100%; padding: 14px; border: none; border-radius: 50px; font-family: 'Lilita One', Arial Black, Arial, sans-serif; font-size: 1.1em; cursor: pointer; letter-spacing: 1px; transition: all 0.15s; margin-top: 12px; }
+        .btn-primary { background: linear-gradient(135deg, #FFD700, #FF8C00); color: #000; box-shadow: 0 5px 0 rgba(0,0,0,0.35), 0 4px 12px rgba(255,200,0,0.3); }
+        .btn-primary:active { transform: translateY(3px); box-shadow: 0 2px 0 rgba(0,0,0,0.35); }
+        .btn-primary:disabled { opacity: 0.35; pointer-events: none; }
+        .btn-secondary { background: rgba(255,255,255,0.1); color: white; border: 2px solid rgba(255,255,255,0.2); }
+
+        /* SELECT */
+        .exercises-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin: 10px 0; flex: 1; }
+        .exercise-card { background: rgba(255,255,255,0.06); border: 2px solid rgba(255,255,255,0.12); border-radius: 13px; padding: 10px 8px; text-align: center; cursor: pointer; transition: all 0.15s; position: relative; }
+        .exercise-card.selected { background: rgba(255,215,0,0.15); border-color: #FFD700; transform: scale(1.03); }
+        .card-svg { width: 100%; max-height: 65px; }
+        .card-name { font-size: 0.78em; margin-top: 4px; }
+        .card-tag { font-size: 0.58em; color: #aaa; font-family: Arial; font-weight: normal; margin-top: 1px; }
+        .check-badge { position: absolute; top: 6px; right: 6px; background: #FFD700; color: #000; border-radius: 50%; width: 18px; height: 18px; display: none; align-items: center; justify-content: center; font-size: 0.7em; }
+        .exercise-card.selected .check-badge { display: flex; }
+
+        /* TIMER */
+        .progress-dots { display: flex; justify-content: center; gap: 8px; margin: 10px 0 4px; }
+        .dot { width: 11px; height: 11px; border-radius: 50%; background: rgba(255,255,255,0.15); border: 2px solid rgba(255,255,255,0.25); }
+        .dot.active { background: #FFD700; border-color: #FFD700; }
+        .dot.done { background: #4CAF50; border-color: #4CAF50; }
+        .round-dots { display: flex; justify-content: center; gap: 6px; margin: 3px 0; }
+        .rdot { width: 9px; height: 9px; border-radius: 50%; background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.2); }
+        .rdot.done { background: #FFD700; border-color: #FFD700; }
+        .rdot.active { background: #FF8C00; border-color: #FF8C00; }
+
+        .ex-name-big { font-size: 1.5em; text-align: center; color: #FFD700; text-shadow: 2px 2px 0 #000; margin: 4px 0; }
+        .ex-illustration { width: 100%; max-height: 110px; display: block; margin: 4px auto; }
+
+        .timer-wrap { width: 155px; height: 155px; margin: 6px auto; position: relative; }
+        .timer-wrap svg { transform: rotate(-90deg); display: block; }
+        .timer-bg { fill: none; stroke: rgba(255,255,255,0.1); stroke-width: 13; }
+        .timer-ring { fill: none; stroke: #FFD700; stroke-width: 13; stroke-linecap: round; stroke-dasharray: 440; stroke-dashoffset: 0; }
+        .timer-ring.rest { stroke: #64b5f6; }
+        .timer-num { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); font-size: 2.7em; text-shadow: 2px 2px 0 #000; }
+        .timer-label { position: absolute; bottom: 20%; left: 50%; transform: translateX(-50%); font-size: 0.55em; color: #aaa; font-family: Arial; font-weight: normal; white-space: nowrap; }
+
+        .ex-desc { text-align: center; color: #bbb; font-size: 0.73em; font-family: Arial, sans-serif; font-weight: normal; margin: 4px 8px 0; line-height: 1.4; }
+
+        /* REST OVERLAY */
+        .rest-overlay { background: rgba(100,181,246,0.12); border: 2px solid #64b5f6; border-radius: 14px; padding: 10px; text-align: center; margin: 6px 0; }
+        .rest-title { color: #64b5f6; font-size: 1.1em; }
+        .rest-sub { color: #aaa; font-size: 0.72em; font-family: Arial; font-weight: normal; margin-top: 2px; }
+
+        /* RESULTS */
+        .results-center { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+        @keyframes bounce { from { transform: translateY(0); } to { transform: translateY(-12px); } }
+        .trophy-anim { font-size: 4.5em; animation: bounce 0.6s ease-in-out infinite alternate; }
+        .streak-box { background: rgba(255,140,0,0.15); border: 2px solid #FF8C00; border-radius: 16px; padding: 12px 28px; margin: 12px 0; }
+        .streak-num { font-size: 2.8em; color: #FF8C00; }
+        .streak-lbl { font-size: 0.82em; color: #aaa; font-family: Arial; font-weight: normal; }
+        .milestone-banner { background: linear-gradient(135deg, #FFD700, #FF8C00); color: #000; border-radius: 13px; padding: 10px 18px; margin: 7px 0; font-size: 0.88em; display: none; }
+        .next-lbl { color: #777; font-size: 0.72em; font-family: Arial; font-weight: normal; margin-top: 5px; }
+
+        .shelf-title { text-align: center; color: #FFD700; font-size: 0.82em; margin: 16px 0 7px; }
+        .trophy-shelf { display: flex; flex-wrap: wrap; justify-content: center; gap: 7px; min-height: 34px; }
+        .next-hint { text-align: center; color: #666; font-size: 0.7em; font-family: Arial; font-weight: normal; margin-top: 3px; }
+
+        /* CHARACTERS */
+        @keyframes charBob { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-9px)} }
+        @keyframes charWiggle { 0%,100%{transform:rotate(0deg) scale(1)} 25%{transform:rotate(-10deg) scale(1.05)} 75%{transform:rotate(10deg) scale(1.05)} }
+        .chars-row { display:flex; justify-content:center; align-items:flex-end; gap:6px; margin:8px 0 4px; }
+        .char-home { width:29%; max-width:88px; height:auto; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5)); }
+        .char-bob-0 { animation: charBob 2.3s ease-in-out infinite; }
+        .char-bob-1 { animation: charBob 2.3s ease-in-out infinite 0.45s; }
+        .char-bob-2 { animation: charBob 2.3s ease-in-out infinite 0.9s; }
+        .char-celebrate { width:120px; height:auto; filter: drop-shadow(0 6px 12px rgba(0,0,0,0.6)); animation: charWiggle 0.55s ease-in-out infinite; margin: 4px auto; display:block; }
+
+        /* PROFILE SCREEN */
+        @keyframes profilePop { 0%{transform:scale(0.85);opacity:0} 100%{transform:scale(1);opacity:1} }
+        .profile-cards { display:flex; gap:14px; margin:20px 0; flex:1; }
+        .profile-card { flex:1; background:rgba(255,255,255,0.07); border:3px solid rgba(255,255,255,0.15); border-radius:20px; display:flex; flex-direction:column; align-items:center; padding:16px 10px 20px; cursor:pointer; transition:all 0.18s; animation: profilePop 0.3s ease-out; }
+        .profile-card:active { transform:scale(0.96); }
+        .profile-card.matej-card { border-color:#2980b9; background:rgba(41,128,185,0.12); }
+        .profile-card.max-card   { border-color:#e67e22; background:rgba(230,126,34,0.12); }
+        .profile-char-big { width:100%; max-width:110px; height:auto; filter: drop-shadow(0 5px 10px rgba(0,0,0,0.5)); animation: charBob 2.3s ease-in-out infinite; }
+        .profile-name-big { font-size:1.6em; margin-top:10px; letter-spacing:2px; }
+        .matej-card .profile-name-big { color:#64b5f6; text-shadow:2px 2px 0 #000; }
+        .max-card .profile-name-big   { color:#ffb74d; text-shadow:2px 2px 0 #000; }
+        .profile-stats-mini { font-size:0.68em; color:#aaa; font-family:Arial; font-weight:normal; margin-top:6px; line-height:1.8; text-align:center; }
+        .profile-stats-mini span { color:#FFD700; }
+
+        /* PROFILE INDICATOR on home screen */
+        .profile-bar { display:flex; align-items:center; gap:8px; background:rgba(255,255,255,0.06); border:1.5px solid rgba(255,255,255,0.12); border-radius:30px; padding:5px 12px 5px 6px; margin-bottom:6px; }
+        .profile-mini-char { width:36px; height:auto; }
+        .profile-bar-name { font-size:1em; flex:1; }
+        .profile-bar-name.matej { color:#64b5f6; }
+        .profile-bar-name.max   { color:#ffb74d; }
+        .btn-switch { background:rgba(255,255,255,0.1); border:1.5px solid rgba(255,255,255,0.2); color:white; border-radius:20px; padding:4px 10px; font-family:'Lilita One',Arial,sans-serif; font-size:0.65em; cursor:pointer; white-space:nowrap; }
+    </style>
+</head>
+<body>
+
+<!-- ══════════════ PROFILE SELECT ══════════════ -->
+<div class="screen active" id="screen-profile">
+    <div class="title" style="margin-top:24px;">⚡ KDO CVIČÍ? ⚡</div>
+    <div class="subtitle">Vyber svůj profil</div>
+    <div class="profile-cards">
+        <div class="profile-card matej-card" onclick="selectProfile('matej')">
+            <svg class="profile-char-big" viewBox="0 0 100 115" xmlns="http://www.w3.org/2000/svg" id="pc-matej"></svg>
+            <div class="profile-name-big">MATĚJ</div>
+            <div class="profile-stats-mini" id="ps-matej">🔥 <span>0</span> dní<br>⭐ <span>0</span> hvězd<br>🏆 <span>0</span> trofejí</div>
+        </div>
+        <div class="profile-card max-card" onclick="selectProfile('max')">
+            <svg class="profile-char-big" viewBox="0 0 100 115" xmlns="http://www.w3.org/2000/svg" id="pc-max"></svg>
+            <div class="profile-name-big">MAX</div>
+            <div class="profile-stats-mini" id="ps-max">🔥 <span>0</span> dní<br>⭐ <span>0</span> hvězd<br>🏆 <span>0</span> trofejí</div>
+        </div>
+    </div>
+</div>
+
+<!-- ══════════════ HOME ══════════════ -->
+<div class="screen" id="screen-home">
+    <div class="title" style="margin-top:6px;">⚡ BRAWL FITNESS ⚡</div>
+
+    <div class="profile-bar">
+        <svg class="profile-mini-char" viewBox="0 0 100 115" xmlns="http://www.w3.org/2000/svg" id="h-mini-char"></svg>
+        <div class="profile-bar-name" id="h-profile-name">MATĚJ</div>
+        <button class="btn-switch" onclick="switchProfile()">↩ ZMĚNIT</button>
+    </div>
+
+    <div class="stats-bar">
+        <div class="stat-item"><span class="stat-icon">🔥</span><div><span class="stat-value" id="h-streak">0</span><span class="stat-label">DNŮ V ŘADĚ</span></div></div>
+        <div class="stat-item"><span class="stat-icon">⭐</span><div><span class="stat-value" id="h-stars">0</span><span class="stat-label">HVĚZDY</span></div></div>
+        <div class="stat-item"><span class="stat-icon">🏆</span><div><span class="stat-value" id="h-trophies">0</span><span class="stat-label">TROFEJE</span></div></div>
+    </div>
+    <div class="next-hint" id="h-next-hint"></div>
+
+    <div class="chars-row">
+        <svg class="char-home char-bob-0" viewBox="0 0 100 115" xmlns="http://www.w3.org/2000/svg" id="char-verde-home"></svg>
+        <svg class="char-home char-bob-1" viewBox="0 0 100 115" xmlns="http://www.w3.org/2000/svg" id="char-profile-home"></svg>
+    </div>
+
+    <button class="btn btn-primary" onclick="goToSelect()">💪 TRÉNOVAT!</button>
+    <div class="shelf-title">🏆 TROFEJE</div>
+    <div class="trophy-shelf" id="trophy-shelf"></div>
+</div>
+
+<!-- ══════════════ SELECT ══════════════ -->
+<div class="screen" id="screen-select">
+    <div class="title" style="margin-top:6px;">VYBER CVIČENÍ</div>
+    <div class="subtitle">Vyber 3 cvičení — každé 3× po minutě</div>
+    <div class="exercises-grid" id="exercises-grid"></div>
+    <button class="btn btn-primary" id="start-btn" onclick="startWorkout()" disabled>VYBER CVIČENÍ (0/3)</button>
+</div>
+
+<!-- ══════════════ TIMER ══════════════ -->
+<div class="screen" id="screen-timer">
+    <div class="title" style="margin-top:6px;" id="t-title">CVIČENÍ 1/3</div>
+
+    <div class="progress-dots" id="progress-dots"></div>
+    <div class="round-dots" id="round-dots"></div>
+
+    <div id="exercise-panel">
+        <div class="ex-name-big" id="t-name"></div>
+        <svg class="ex-illustration" id="t-svg" viewBox="0 0 160 90" xmlns="http://www.w3.org/2000/svg"></svg>
+    </div>
+
+    <div id="rest-panel" style="display:none">
+        <div class="rest-overlay">
+            <div class="rest-title">💨 ODPOČINEK</div>
+            <div class="rest-sub" id="rest-next-name">Příští: —</div>
+        </div>
+    </div>
+
+    <div class="timer-wrap">
+        <svg width="155" height="155" viewBox="0 0 155 155">
+            <circle class="timer-bg" cx="77.5" cy="77.5" r="70"/>
+            <circle class="timer-ring" id="t-ring" cx="77.5" cy="77.5" r="70"/>
+        </svg>
+        <div class="timer-num" id="t-num">60</div>
+        <div class="timer-label" id="t-label">SEC</div>
+    </div>
+
+    <div class="ex-desc" id="t-desc"></div>
+    <button class="btn btn-primary" id="t-btn" onclick="timerAction()" style="margin-top:auto;">▶ START</button>
+</div>
+
+<!-- ══════════════ RESULTS ══════════════ -->
+<div class="screen" id="screen-results">
+    <div class="results-center">
+        <svg class="char-celebrate" viewBox="0 0 100 115" xmlns="http://www.w3.org/2000/svg" id="r-char"></svg>
+        <div class="title">SKVĚLÁ PRÁCE!</div>
+        <div style="font-size:2.3em;margin:7px 0" id="r-stars">⭐⭐⭐</div>
+        <div class="streak-box"><div class="streak-num" id="r-streak">1</div><div class="streak-lbl">🔥 DNŮ V ŘADĚ</div></div>
+        <div class="milestone-banner" id="r-milestone"></div>
+        <div class="next-lbl" id="r-next"></div>
+    </div>
+    <button class="btn btn-primary" onclick="goHome()">🏠 ZPĚT DOMŮ</button>
+</div>
+
+<script>
+// ── CHARACTERS ───────────────────────────────────────────
+const CHARS = {
+    verde: `
+        <!-- VERDE – zelená ostnatá příšerka -->
+        <!-- Trny -->
+        <polygon points="50,4 43,22 57,22" fill="#f0c030" stroke="#b08800" stroke-width="1.5"/>
+        <polygon points="79,11 71,27 85,25" fill="#f0c030" stroke="#b08800" stroke-width="1.5"/>
+        <polygon points="93,43 78,49 83,63" fill="#f0c030" stroke="#b08800" stroke-width="1.5"/>
+        <polygon points="21,11 29,27 15,25" fill="#f0c030" stroke="#b08800" stroke-width="1.5"/>
+        <polygon points="7,43 22,49 17,63" fill="#f0c030" stroke="#b08800" stroke-width="1.5"/>
+        <polygon points="27,80 37,65 44,80" fill="#f0c030" stroke="#b08800" stroke-width="1.5"/>
+        <polygon points="73,80 63,65 56,80" fill="#f0c030" stroke="#b08800" stroke-width="1.5"/>
+        <!-- Tělo -->
+        <circle cx="50" cy="55" r="36" fill="#27ae60" stroke="#1a7a42" stroke-width="3"/>
+        <!-- Světlejší břicho -->
+        <ellipse cx="50" cy="62" rx="22" ry="19" fill="#2ecc71" opacity="0.45"/>
+        <!-- Oči -->
+        <circle cx="37" cy="46" r="13" fill="white" stroke="#1a7a42" stroke-width="2"/>
+        <circle cx="63" cy="46" r="13" fill="white" stroke="#1a7a42" stroke-width="2"/>
+        <circle cx="39" cy="48" r="6.5" fill="#1a1a1a"/>
+        <circle cx="65" cy="48" r="6.5" fill="#1a1a1a"/>
+        <circle cx="40" cy="45" r="2.8" fill="white"/>
+        <circle cx="66" cy="45" r="2.8" fill="white"/>
+        <!-- Úsměv -->
+        <path d="M 37,66 Q 50,77 63,66" fill="none" stroke="#1a7a42" stroke-width="3" stroke-linecap="round"/>
+        <!-- Ruce -->
+        <ellipse cx="9" cy="63" rx="10" ry="6" fill="#27ae60" stroke="#1a7a42" stroke-width="2" transform="rotate(-20,9,63)"/>
+        <ellipse cx="91" cy="63" rx="10" ry="6" fill="#27ae60" stroke="#1a7a42" stroke-width="2" transform="rotate(20,91,63)"/>`,
+
+    bruiser: `
+        <!-- BRUISER – modrý svalnatý brawler -->
+        <!-- Tělo -->
+        <rect x="21" y="60" width="58" height="48" rx="11" fill="#2471a3" stroke="#145a7c" stroke-width="3"/>
+        <!-- Pásek -->
+        <rect x="21" y="76" width="58" height="10" rx="4" fill="#145a7c" stroke="#0d3d54" stroke-width="1.5"/>
+        <rect x="43" y="74" width="14" height="14" rx="3" fill="#FFD700" stroke="#aa8800" stroke-width="1.5"/>
+        <!-- Hlava -->
+        <circle cx="50" cy="44" r="31" fill="#2980b9" stroke="#145a7c" stroke-width="3"/>
+        <!-- Maska / přilba -->
+        <ellipse cx="50" cy="39" rx="24" ry="17" fill="#145a7c" opacity="0.5"/>
+        <!-- Oči – žluté glowing -->
+        <circle cx="38" cy="37" r="10" fill="#FFD700" stroke="#333" stroke-width="1.5"/>
+        <circle cx="62" cy="37" r="10" fill="#FFD700" stroke="#333" stroke-width="1.5"/>
+        <circle cx="39" cy="38" r="5" fill="#e65c00"/>
+        <circle cx="63" cy="38" r="5" fill="#e65c00"/>
+        <circle cx="40" cy="36" r="2" fill="white"/>
+        <circle cx="64" cy="36" r="2" fill="white"/>
+        <!-- Přísná ústa -->
+        <path d="M 40,57 Q 50,62 60,57" fill="none" stroke="#145a7c" stroke-width="3" stroke-linecap="round"/>
+        <!-- Velké ruce -->
+        <rect x="0" y="58" width="24" height="36" rx="11" fill="#2471a3" stroke="#145a7c" stroke-width="2.5"/>
+        <rect x="76" y="58" width="24" height="36" rx="11" fill="#2471a3" stroke="#145a7c" stroke-width="2.5"/>
+        <!-- Pěsti -->
+        <circle cx="12" cy="98" r="13" fill="#1a5f8a" stroke="#0d3d54" stroke-width="2"/>
+        <circle cx="88" cy="98" r="13" fill="#1a5f8a" stroke="#0d3d54" stroke-width="2"/>
+        <line x1="5" y1="95" x2="19" y2="95" stroke="#145a7c" stroke-width="2"/>
+        <line x1="81" y1="95" x2="95" y2="95" stroke="#145a7c" stroke-width="2"/>`,
+
+    chomper: `
+        <!-- CHOMPER – oranžový grínující goblin -->
+        <!-- Tělo (malé) -->
+        <ellipse cx="50" cy="92" rx="25" ry="19" fill="#e67e22" stroke="#ca6610" stroke-width="3"/>
+        <!-- Nožičky -->
+        <rect x="28" y="103" width="16" height="13" rx="7" fill="#ca6610" stroke="#a05200" stroke-width="2"/>
+        <rect x="56" y="103" width="16" height="13" rx="7" fill="#ca6610" stroke="#a05200" stroke-width="2"/>
+        <!-- Obří hlava -->
+        <circle cx="50" cy="48" r="38" fill="#f39c12" stroke="#ca6610" stroke-width="3"/>
+        <!-- Rohy -->
+        <polygon points="27,17 20,1 38,13" fill="#e74c3c" stroke="#c0392b" stroke-width="2"/>
+        <polygon points="73,17 80,1 62,13" fill="#e74c3c" stroke="#c0392b" stroke-width="2"/>
+        <!-- Oči (velké, nadšené) -->
+        <circle cx="34" cy="39" r="14" fill="white" stroke="#ca6610" stroke-width="2"/>
+        <circle cx="66" cy="39" r="14" fill="white" stroke="#ca6610" stroke-width="2"/>
+        <circle cx="35" cy="41" r="8" fill="#8e44ad"/>
+        <circle cx="67" cy="41" r="8" fill="#8e44ad"/>
+        <circle cx="36" cy="38" r="3.5" fill="white"/>
+        <circle cx="68" cy="38" r="3.5" fill="white"/>
+        <!-- Obří grin -->
+        <path d="M 20,60 Q 50,84 80,60" fill="#c0392b" stroke="#333" stroke-width="2"/>
+        <!-- Zuby -->
+        <rect x="28" y="62" width="10" height="13" rx="3" fill="white"/>
+        <rect x="41" y="64" width="10" height="15" rx="3" fill="white"/>
+        <rect x="55" y="64" width="10" height="15" rx="3" fill="white"/>
+        <rect x="68" y="62" width="10" height="13" rx="3" fill="white"/>`
+};
+
+function renderChars() {
+    document.getElementById('char-verde-home').innerHTML = CHARS.verde;
+}
+
+// ── EXERCISES ────────────────────────────────────────────
+// SVGs: side-view stick figures, viewBox 0 0 160 90, ground at y=80
+const EXSVG = {
+    plank: `
+        <line x1="0" y1="78" x2="160" y2="78" stroke="rgba(255,255,255,0.15)" stroke-width="2"/>
+        <!-- body horizontal -->
+        <line x1="15" y1="63" x2="118" y2="55" stroke="#FFD700" stroke-width="5" stroke-linecap="round"/>
+        <!-- head -->
+        <circle cx="129" cy="49" r="10" fill="#FFD700" opacity="0.9"/>
+        <!-- right forearm: down to ground then forward -->
+        <line x1="98" y1="57" x2="95" y2="78" stroke="white" stroke-width="3.5" stroke-linecap="round"/>
+        <line x1="76" y1="78" x2="106" y2="78" stroke="white" stroke-width="3.5" stroke-linecap="round"/>
+        <!-- left forearm -->
+        <line x1="65" y1="60" x2="62" y2="78" stroke="white" stroke-width="3.5" stroke-linecap="round"/>
+        <line x1="43" y1="78" x2="73" y2="78" stroke="white" stroke-width="3.5" stroke-linecap="round"/>
+        <!-- toes -->
+        <line x1="15" y1="63" x2="8" y2="78" stroke="white" stroke-width="3" stroke-linecap="round"/>`,
+
+    deadbug: `
+        <line x1="0" y1="78" x2="160" y2="78" stroke="rgba(255,255,255,0.15)" stroke-width="2"/>
+        <!-- body on ground -->
+        <line x1="55" y1="68" x2="120" y2="68" stroke="#FFD700" stroke-width="5" stroke-linecap="round"/>
+        <!-- head -->
+        <circle cx="133" cy="65" r="10" fill="#FFD700" opacity="0.9"/>
+        <!-- right arm UP -->
+        <line x1="110" y1="68" x2="125" y2="35" stroke="white" stroke-width="3.5" stroke-linecap="round"/>
+        <circle cx="125" cy="32" r="5" fill="white" opacity="0.7"/>
+        <!-- left arm bent (resting) -->
+        <line x1="95" y1="68" x2="80" y2="55" stroke="white" stroke-width="3.5" stroke-linecap="round"/>
+        <!-- left leg EXTENDED -->
+        <line x1="55" y1="68" x2="20" y2="42" stroke="white" stroke-width="3.5" stroke-linecap="round"/>
+        <circle cx="17" cy="39" r="5" fill="white" opacity="0.7"/>
+        <!-- right leg bent UP -->
+        <line x1="70" y1="68" x2="65" y2="45" stroke="white" stroke-width="3.5" stroke-linecap="round"/>
+        <line x1="65" y1="45" x2="80" y2="35" stroke="white" stroke-width="3" stroke-linecap="round"/>
+        <!-- arrow cue -->
+        <text x="130" y="30" fill="#FF8C00" font-size="10" font-weight="bold">↑</text>
+        <text x="10" y="38" fill="#FF8C00" font-size="10" font-weight="bold">←</text>`,
+
+    birddog: `
+        <line x1="0" y1="78" x2="160" y2="78" stroke="rgba(255,255,255,0.15)" stroke-width="2"/>
+        <!-- body horizontal on all fours level -->
+        <line x1="45" y1="45" x2="110" y2="45" stroke="#FFD700" stroke-width="5" stroke-linecap="round"/>
+        <!-- head -->
+        <circle cx="122" cy="42" r="10" fill="#FFD700" opacity="0.9"/>
+        <!-- right arm EXTENDED FORWARD -->
+        <line x1="110" y1="45" x2="148" y2="32" stroke="white" stroke-width="3.5" stroke-linecap="round"/>
+        <circle cx="151" cy="30" r="5" fill="#FF8C00"/>
+        <!-- left arm (support) down to ground -->
+        <line x1="90" y1="45" x2="88" y2="78" stroke="white" stroke-width="3.5" stroke-linecap="round"/>
+        <!-- right knee (support) down -->
+        <line x1="65" y1="45" x2="63" y2="68" stroke="white" stroke-width="3.5" stroke-linecap="round"/>
+        <line x1="55" y1="68" x2="63" y2="78" stroke="white" stroke-width="3" stroke-linecap="round"/>
+        <!-- left leg EXTENDED BACK -->
+        <line x1="45" y1="45" x2="8" y2="32" stroke="white" stroke-width="3.5" stroke-linecap="round"/>
+        <circle cx="5" cy="30" r="5" fill="#FF8C00"/>
+        <text x="150" y="27" fill="#FF8C00" font-size="9">→</text>
+        <text x="2" y="27" fill="#FF8C00" font-size="9">←</text>`,
+
+    bridge: `
+        <line x1="0" y1="78" x2="160" y2="78" stroke="rgba(255,255,255,0.15)" stroke-width="2"/>
+        <!-- upper back on ground -->
+        <line x1="110" y1="68" x2="145" y2="68" stroke="#FFD700" stroke-width="5" stroke-linecap="round"/>
+        <!-- head -->
+        <circle cx="150" cy="63" r="9" fill="#FFD700" opacity="0.9"/>
+        <!-- torso raised diagonally -->
+        <line x1="80" y1="38" x2="110" y2="68" stroke="#FFD700" stroke-width="5" stroke-linecap="round"/>
+        <!-- thighs -->
+        <line x1="60" y1="68" x2="80" y2="38" stroke="white" stroke-width="3.5" stroke-linecap="round"/>
+        <!-- shins vertical -->
+        <line x1="45" y1="78" x2="60" y2="68" stroke="white" stroke-width="3.5" stroke-linecap="round"/>
+        <!-- arms on ground -->
+        <line x1="110" y1="68" x2="95" y2="78" stroke="white" stroke-width="3" stroke-linecap="round"/>
+        <line x1="125" y1="68" x2="138" y2="78" stroke="white" stroke-width="3" stroke-linecap="round"/>
+        <!-- arrow up -->
+        <text x="72" y="22" fill="#FF8C00" font-size="14" font-weight="bold">↑</text>`,
+
+    sideplank: `
+        <line x1="0" y1="78" x2="160" y2="78" stroke="rgba(255,255,255,0.15)" stroke-width="2"/>
+        <!-- body diagonal -->
+        <line x1="25" y1="70" x2="118" y2="30" stroke="#FFD700" stroke-width="5" stroke-linecap="round"/>
+        <!-- head -->
+        <circle cx="127" cy="24" r="10" fill="#FFD700" opacity="0.9"/>
+        <!-- forearm on ground -->
+        <line x1="25" y1="70" x2="45" y2="78" stroke="white" stroke-width="3.5" stroke-linecap="round"/>
+        <line x1="10" y1="78" x2="50" y2="78" stroke="white" stroke-width="3.5" stroke-linecap="round"/>
+        <!-- elbow joint -->
+        <circle cx="28" cy="72" r="4" fill="white" opacity="0.6"/>
+        <!-- top arm raised -->
+        <line x1="88" y1="38" x2="95" y2="15" stroke="white" stroke-width="3.5" stroke-linecap="round"/>
+        <circle cx="95" cy="12" r="4" fill="white" opacity="0.6"/>
+        <!-- feet stacked -->
+        <line x1="20" y1="75" x2="10" y2="78" stroke="white" stroke-width="3" stroke-linecap="round"/>`,
+
+    shortfoot: `
+        <line x1="0" y1="78" x2="160" y2="78" stroke="rgba(255,255,255,0.15)" stroke-width="2"/>
+        <!-- seated person (simplified) -->
+        <line x1="110" y1="25" x2="110" y2="55" stroke="#FFD700" stroke-width="5" stroke-linecap="round"/>
+        <circle cx="110" cy="17" r="10" fill="#FFD700" opacity="0.9"/>
+        <!-- thigh horizontal -->
+        <line x1="85" y1="55" x2="115" y2="55" stroke="white" stroke-width="4" stroke-linecap="round"/>
+        <!-- shin down -->
+        <line x1="85" y1="55" x2="85" y2="78" stroke="white" stroke-width="4" stroke-linecap="round"/>
+        <!-- FOOT with arch highlighted -->
+        <path d="M 60,78 Q 72,72 85,78" fill="none" stroke="#FF8C00" stroke-width="4" stroke-linecap="round"/>
+        <line x1="55" y1="78" x2="90" y2="78" stroke="white" stroke-width="4" stroke-linecap="round"/>
+        <!-- arch arrow -->
+        <path d="M 70,75 Q 72,66 74,75" fill="none" stroke="#FF8C00" stroke-width="2.5" stroke-dasharray="3,2"/>
+        <text x="62" y="62" fill="#FF8C00" font-size="9" font-family="Arial">klenba ↑</text>`,
+
+    balance: `
+        <line x1="0" y1="78" x2="160" y2="78" stroke="rgba(255,255,255,0.15)" stroke-width="2"/>
+        <!-- standing body -->
+        <line x1="80" y1="22" x2="80" y2="58" stroke="#FFD700" stroke-width="5" stroke-linecap="round"/>
+        <!-- head -->
+        <circle cx="80" cy="13" r="10" fill="#FFD700" opacity="0.9"/>
+        <!-- arms slightly out for balance -->
+        <line x1="80" y1="32" x2="55" y2="46" stroke="white" stroke-width="3.5" stroke-linecap="round"/>
+        <line x1="80" y1="32" x2="105" y2="46" stroke="white" stroke-width="3.5" stroke-linecap="round"/>
+        <!-- support leg straight -->
+        <line x1="80" y1="58" x2="75" y2="78" stroke="white" stroke-width="4" stroke-linecap="round"/>
+        <!-- raised leg: knee up -->
+        <line x1="80" y1="58" x2="95" y2="68" stroke="white" stroke-width="4" stroke-linecap="round"/>
+        <line x1="95" y1="68" x2="100" y2="55" stroke="white" stroke-width="3.5" stroke-linecap="round"/>
+        <circle cx="101" cy="52" r="5" fill="white" opacity="0.5"/>
+        <!-- balance wobble lines -->
+        <text x="108" y="40" fill="#FF8C00" font-size="18" opacity="0.6">〜</text>`,
+
+    calfraise: `
+        <line x1="0" y1="78" x2="160" y2="78" stroke="rgba(255,255,255,0.15)" stroke-width="2"/>
+        <!-- wall/support -->
+        <line x1="120" y1="10" x2="120" y2="78" stroke="rgba(255,255,255,0.2)" stroke-width="3"/>
+        <!-- body upright -->
+        <line x1="80" y1="18" x2="80" y2="60" stroke="#FFD700" stroke-width="5" stroke-linecap="round"/>
+        <!-- head -->
+        <circle cx="80" cy="9" r="9" fill="#FFD700" opacity="0.9"/>
+        <!-- arms forward to wall -->
+        <line x1="80" y1="30" x2="60" y2="42" stroke="white" stroke-width="3" stroke-linecap="round"/>
+        <line x1="80" y1="30" x2="115" y2="40" stroke="white" stroke-width="3" stroke-linecap="round"/>
+        <circle cx="115" cy="41" r="4" fill="white" opacity="0.5"/>
+        <!-- legs on tiptoe: short legs + high heels -->
+        <line x1="80" y1="60" x2="73" y2="70" stroke="white" stroke-width="4" stroke-linecap="round"/>
+        <line x1="80" y1="60" x2="87" y2="70" stroke="white" stroke-width="4" stroke-linecap="round"/>
+        <!-- tiptoe circles (high) -->
+        <circle cx="71" cy="72" r="5" fill="white" opacity="0.7"/>
+        <circle cx="89" cy="72" r="5" fill="white" opacity="0.7"/>
+        <!-- arrow up -->
+        <text x="43" y="50" fill="#FF8C00" font-size="16" font-weight="bold">↑</text>`
+};
+
+const EXERCISES = [
+    { id:1, name:'Prkno', tag:'střed těla', dur:60, svgKey:'plank',
+      desc:'Opři se na předloktí a špičky. Tělo drž rovné jako prkno — zadeček dolů, záda rovně!' },
+    { id:2, name:'Mrtvý brouk', tag:'střed těla', dur:60, svgKey:'deadbug',
+      desc:'Leh na záda. Zvedni ruce a kolena. Vystřídej protilehlou ruku + nohu — záda přitiskni k zemi!' },
+    { id:3, name:'Ptačí pes', tag:'střed těla', dur:60, svgKey:'birddog',
+      desc:'Na čtyřech. Zvedni pravou ruku a levou nohu zároveň — drž rovně! Pak vyměň.' },
+    { id:4, name:'Most', tag:'střed těla + zadek', dur:60, svgKey:'bridge',
+      desc:'Leh na záda, kolena pokrč. Zvedni zadek co nejvýš a drž! Pak pomalu dolů.' },
+    { id:5, name:'Boční prkno', tag:'střed těla', dur:60, svgKey:'sideplank',
+      desc:'Na boku, opři se o předloktí. Zvedni boky — tělo v přímé linii. 30s každou stranu.' },
+    { id:6, name:'Krátké chodidlo', tag:'klenba nožní', dur:60, svgKey:'shortfoot',
+      desc:'Seď, chodidlo na zemi. Zkus stáhnout prsty k patě — klenba se zvedne. Prsty ale neohýbej!' },
+    { id:7, name:'Stoj na jedné', tag:'kotníky + rovnováha', dur:60, svgKey:'balance',
+      desc:'Stoj na jedné noze, druhé koleno zvedni. Drž 30s každou stranu. Soustřeď se na kotník!' },
+    { id:8, name:'Lýtkové zdvihy', tag:'kotníky + klenba', dur:60, svgKey:'calfraise',
+      desc:'Postav se, ruce lehce na zdi. Pomalu zvedej paty co nejvýš na špičky a pomalu dolů.' },
+];
+
+const MILESTONES = [3,7,14,21,30,50,100];
+const M_LABEL = {3:'3 dny! První trofej!',7:'Týden! Stříbrná trofej!',14:'Dva týdny! Zlatá trofej!',21:'3 týdny! Mega trofej!',30:'Měsíc! Legendární trofej!',50:'50 dní! Epická série!',100:'100 dní! BRAWL MISTR!'};
+const M_ICON  = {3:'🥉',7:'🥈',14:'🥇',21:'💎',30:'👑',50:'🌟',100:'⚡'};
+
+const ROUNDS = 3;
+const EX_DUR = 60;
+const REST_DUR = 15;
+const CIRC = 2 * Math.PI * 70; // ≈ 440
+
+// ── PROFILES ──────────────────────────────────────────────
+const PROFILES = {
+    matej: { name:'MATĚJ', charKey:'bruiser', color:'#64b5f6' },
+    max:   { name:'MAX',   charKey:'chomper', color:'#ffb74d' }
+};
+
+let allStates = {
+    matej: { streak:0, stars:0, trophies:[], lastDate:null, totalWorkouts:0 },
+    max:   { streak:0, stars:0, trophies:[], lastDate:null, totalWorkouts:0 }
+};
+let currentProfile = null;
+let state = {};
+
+let selected = [];
+let curIdx = 0;
+let curRound = 1;
+let phase = 'ready';
+let timeLeft = 0;
+let totalTime = 0;
+let iv = null;
+
+function loadAllStates() {
+    try {
+        const s = localStorage.getItem('brawlFit_profiles');
+        if (s) {
+            const loaded = JSON.parse(s);
+            // merge so new fields are always present
+            for (const k of ['matej','max']) {
+                if (loaded[k]) allStates[k] = { ...allStates[k], ...loaded[k] };
+            }
+        }
+        // validate streaks
+        for (const k of ['matej','max']) {
+            if (allStates[k].lastDate) {
+                const diff = Math.floor((new Date() - new Date(allStates[k].lastDate)) / 86400000);
+                if (diff > 1) allStates[k].streak = 0;
+            }
+        }
+    } catch(e) {}
+}
+function save() {
+    try { localStorage.setItem('brawlFit_profiles', JSON.stringify(allStates)); } catch(e) {}
+}
+
+function selectProfile(key) {
+    currentProfile = key;
+    state = allStates[key];
+    refreshHome();
+    renderChars();
+    show('screen-home');
+}
+
+function switchProfile() {
+    refreshProfileScreen();
+    show('screen-profile');
+}
+
+function refreshProfileScreen() {
+    document.getElementById('pc-matej').innerHTML = CHARS.bruiser;
+    document.getElementById('pc-max').innerHTML   = CHARS.chomper;
+    for (const [key, prof] of Object.entries(PROFILES)) {
+        const s = allStates[key];
+        const el = document.getElementById('ps-'+key);
+        el.innerHTML = `🔥 <span>${s.streak}</span> dní<br>⭐ <span>${s.stars}</span> hvězd<br>🏆 <span>${s.trophies.length}</span> trofejí`;
+    }
+}
+
+// ── HOME ──────────────────────────────────────────────────
+function refreshHome() {
+    document.getElementById('h-streak').textContent   = state.streak;
+    document.getElementById('h-stars').textContent    = state.stars;
+    document.getElementById('h-trophies').textContent = state.trophies.length;
+    const shelf = document.getElementById('trophy-shelf');
+    shelf.innerHTML = state.trophies.length
+        ? state.trophies.map(t=>`<span style="font-size:2.1em">${M_ICON[t]||'🏆'}</span>`).join('')
+        : '<span style="color:#444;font-family:Arial;font-size:0.78em;font-weight:normal">Zatím žádné trofeje — cvič!</span>';
+    const next = MILESTONES.find(m=>!state.trophies.includes(m));
+    document.getElementById('h-next-hint').textContent = next
+        ? `Trofej ${M_ICON[next]} za ${Math.max(0,next-state.streak)} dní v řadě`
+        : 'Máš všechny trofeje! 🎉';
+
+    // Profile indicator
+    const prof = PROFILES[currentProfile];
+    const nameEl = document.getElementById('h-profile-name');
+    nameEl.textContent = prof.name;
+    nameEl.className = 'profile-bar-name ' + currentProfile;
+    document.getElementById('h-mini-char').innerHTML = CHARS[prof.charKey];
+    document.getElementById('char-profile-home').innerHTML = CHARS[prof.charKey];
+}
+
+// ── SELECT ────────────────────────────────────────────────
+function goToSelect() {
+    selected = [];
+    const grid = document.getElementById('exercises-grid');
+    grid.innerHTML = EXERCISES.map(ex=>`
+        <div class="exercise-card" id="ec-${ex.id}" onclick="toggleEx(${ex.id})">
+            <div class="check-badge">✓</div>
+            <svg class="card-svg" viewBox="0 0 160 90" xmlns="http://www.w3.org/2000/svg">${EXSVG[ex.svgKey]}</svg>
+            <div class="card-name">${ex.name}</div>
+            <div class="card-tag">${ex.tag}</div>
+        </div>
+    `).join('');
+    updateStartBtn();
+    show('screen-select');
+}
+
+function toggleEx(id) {
+    const i = selected.indexOf(id);
+    const card = document.getElementById('ec-'+id);
+    if (i>=0) { selected.splice(i,1); card.classList.remove('selected'); }
+    else if (selected.length<3) { selected.push(id); card.classList.add('selected'); }
+    updateStartBtn();
+}
+function updateStartBtn() {
+    const btn = document.getElementById('start-btn');
+    const n = selected.length;
+    btn.disabled = n!==3;
+    btn.textContent = n===3 ? '💪 START!' : `VYBER CVIČENÍ (${n}/3)`;
+}
+
+// ── TIMER ─────────────────────────────────────────────────
+function startWorkout() { curIdx=0; curRound=1; show('screen-timer'); loadExercise(); }
+
+function loadExercise() {
+    const ex = EXERCISES.find(e=>e.id===selected[curIdx]);
+    timeLeft = EX_DUR; totalTime = EX_DUR;
+    phase = 'ready';
+    if (iv) { clearInterval(iv); iv=null; }
+
+    // Header
+    document.getElementById('t-title').textContent = `CVIČENÍ ${curIdx+1}/3`;
+
+    // Exercise dots
+    document.getElementById('progress-dots').innerHTML = selected.map((_,i)=>
+        `<div class="dot ${i<curIdx?'done':i===curIdx?'active':''}"></div>`
+    ).join('');
+
+    // Round dots
+    document.getElementById('round-dots').innerHTML = Array.from({length:ROUNDS},(_,i)=>
+        `<div class="rdot ${i<curRound-1?'done':i===curRound-1?'active':''}"></div>`
+    ).join('');
+
+    // Show exercise panel, hide rest
+    document.getElementById('exercise-panel').style.display='';
+    document.getElementById('rest-panel').style.display='none';
+
+    document.getElementById('t-name').textContent = ex.name;
+    document.getElementById('t-svg').innerHTML = EXSVG[ex.svgKey];
+    document.getElementById('t-desc').textContent = ex.desc;
+
+    // Timer display
+    document.getElementById('t-label').textContent = 'KOLO '+curRound+'/'+ROUNDS;
+    setTimerDisplay(EX_DUR, false);
+    document.getElementById('t-btn').textContent = '▶ START';
+}
+
+function loadRest() {
+    timeLeft = REST_DUR; totalTime = REST_DUR;
+    phase = 'rest';
+    if (iv) { clearInterval(iv); iv=null; }
+
+    document.getElementById('exercise-panel').style.display='none';
+    document.getElementById('rest-panel').style.display='';
+    document.getElementById('t-desc').textContent = '';
+
+    const nextEx = EXERCISES.find(e=>e.id===selected[curIdx]);
+    document.getElementById('rest-next-name').textContent = `Další kolo: ${nextEx.name}`;
+
+    setTimerDisplay(REST_DUR, true);
+    document.getElementById('t-label').textContent = 'ODPOČINEK';
+    document.getElementById('t-btn').textContent = '⏭ PŘESKOČIT';
+
+    // Auto-start rest countdown
+    startCountdown();
+}
+
+function setTimerDisplay(t, isRest) {
+    document.getElementById('t-num').textContent = t;
+    const ring = document.getElementById('t-ring');
+    ring.style.transition = 'none';
+    ring.style.strokeDashoffset = 0;
+    ring.className = 'timer-ring' + (isRest ? ' rest' : '');
+}
+
+function updateRing(remaining, total, isRest) {
+    const ring = document.getElementById('t-ring');
+    ring.style.transition = 'stroke-dashoffset 0.85s linear';
+    ring.style.strokeDashoffset = CIRC * (1 - remaining/total);
+}
+
+function timerAction() {
+    if (phase === 'rest') {
+        // Skip rest
+        clearInterval(iv); iv=null;
+        onRestDone();
+        return;
+    }
+    if (phase === 'ready' || phase === 'paused') {
+        startCountdown();
+    } else if (phase === 'exercise') {
+        // Pause
+        phase = 'paused';
+        clearInterval(iv); iv=null;
+        const ring = document.getElementById('t-ring');
+        const cur = parseFloat(getComputedStyle(ring).strokeDashoffset);
+        ring.style.transition='none'; ring.style.strokeDashoffset=cur;
+        document.getElementById('t-btn').textContent='▶ POKRAČOVAT';
+    }
+}
+
+function startCountdown() {
+    const isRest = phase === 'rest' || timeLeft === REST_DUR && phase!=='exercise';
+    if (phase !== 'rest') phase = 'exercise';
+    document.getElementById('t-btn').textContent = phase==='rest' ? '⏭ PŘESKOČIT' : '⏸ PAUZA';
+    updateRing(timeLeft, totalTime, phase==='rest');
+
+    iv = setInterval(()=>{
+        timeLeft--;
+        document.getElementById('t-num').textContent = timeLeft > 0 ? timeLeft : '✓';
+        updateRing(timeLeft, totalTime, phase==='rest');
+        if (timeLeft<=0) {
+            clearInterval(iv); iv=null;
+            if (phase==='rest') { onRestDone(); }
+            else { onExerciseDone(); }
+        }
+    }, 1000);
+}
+
+function onExerciseDone() {
+    if (curRound < ROUNDS) {
+        loadRest();
+    } else {
+        curIdx++;
+        if (curIdx < selected.length) {
+            curRound = 1;
+            loadExercise();
+        } else {
+            finishWorkout();
+        }
+    }
+}
+
+function onRestDone() {
+    curRound++;
+    // Update round dots
+    document.getElementById('round-dots').innerHTML = Array.from({length:ROUNDS},(_,i)=>
+        `<div class="rdot ${i<curRound-1?'done':i===curRound-1?'active':''}"></div>`
+    ).join('');
+    loadExercise();
+}
+
+// ── RESULTS ───────────────────────────────────────────────
+function finishWorkout() {
+    const today = new Date().toDateString();
+    if (state.lastDate !== today) {
+        const last = state.lastDate ? new Date(state.lastDate) : null;
+        const yest = new Date(); yest.setDate(yest.getDate()-1);
+        state.streak = (last && last.toDateString()===yest.toDateString()) ? state.streak+1 : 1;
+        state.lastDate = today;
+        state.stars += 3;
+        state.totalWorkouts = (state.totalWorkouts||0) + 1;
+        const newT = MILESTONES.filter(m=>state.streak>=m&&!state.trophies.includes(m));
+        newT.forEach(t=>state.trophies.push(t));
+        save();
+        document.getElementById('r-streak').textContent = state.streak;
+        // Profile's celebrating character
+        document.getElementById('r-char').innerHTML = CHARS[PROFILES[currentProfile].charKey];
+        const banner = document.getElementById('r-milestone');
+        if (newT.length>0) { banner.style.display='block'; banner.textContent=`${M_ICON[newT[newT.length-1]]} ${M_LABEL[newT[newT.length-1]]}`; }
+        else { banner.style.display='none'; }
+        const next = MILESTONES.find(m=>!state.trophies.includes(m));
+        document.getElementById('r-next').textContent = next ? `Ještě ${next-state.streak} dní v řadě → ${M_ICON[next]}` : '🎉 Máš všechny trofeje!';
+    }
+    show('screen-results');
+}
+
+function goHome() { refreshHome(); show('screen-home'); }
+function show(id) { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
+
+loadAllStates(); refreshProfileScreen(); renderChars();
+</script>
+</body>
+</html>
